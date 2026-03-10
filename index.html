@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Pro</title>
+    <style>
+        :root {
+            --primary: #FF9F1C;
+            --dark: #011627;
+            --white: #FDFFFC;
+            --gold: #FFD700;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; 
+            background: #4ec0ca;
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            cursor: pointer;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #score {
+            position: absolute;
+            top: 60px;
+            width: 100%;
+            text-align: center;
+            font-size: 7rem;
+            color: var(--white);
+            text-shadow: 0 10px 0 rgba(0, 0, 0, 0.2), 5px 5px 0 #000;
+            z-index: 10;
+            pointer-events: none;
+            display: none;
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10rem;
+            color: var(--white);
+            text-shadow: 5px 5px 0 #000;
+            z-index: 50;
+            display: none;
+            pointer-events: none;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(1, 22, 39, 0.4);
+            z-index: 100;
+        }
+
+        #menu {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 40px;
+            border: 8px solid var(--dark);
+            text-align: center;
+            width: 360px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 2.5rem;
+            -webkit-text-stroke: 2px var(--dark);
+            line-height: 0.9;
+        }
+
+        .stats-box {
+            background: #F1F1F1;
+            border-radius: 20px;
+            padding: 15px;
+            border: 4px solid var(--dark);
+            margin: 15px 0;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            font-family: sans-serif;
+            font-weight: bold;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+
+        .shop-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .shop-item {
+            background: white;
+            border: 3px solid var(--dark);
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+        .shop-item img {
+            width: 50px;
+            height: 40px;
+            object-fit: contain;
+            margin-bottom: 5px;
+        }
+
+        .btn-buy {
+            width: 100%;
+            padding: 6px;
+            border: none;
+            border-radius: 8px;
+            background: #ddd;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.7rem;
+        }
+
+        .btn-buy.owned {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-buy.active {
+            background: var(--primary);
+            color: white;
+            border: 2px solid var(--dark);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 15px;
+            color: var(--white);
+            font-size: 1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.1s;
+            border-bottom: 5px solid rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+        }
+
+        .btn-easy { background: #2ecc71; }
+        .btn-medium { background: #f1c40f; }
+        .btn-hard { background: #e74c3c; }
+
+        .btn:active {
+            transform: translateY(3px);
+            border-bottom-width: 2px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game-container">
+        <div id="score">0</div>
+        <div id="countdown">3</div>
+
+        <div id="ui-overlay">
+            <div id="menu">
+                <h1 id="main-title">FLAPPY<br>PRO</h1>
+
+                <div class="stats-box">
+                    <div class="stat-label">TOTAL COINS</div>
+                    <div class="stat-value" style="color: #d4af37;">💰 <span id="total-wallet">0</span></div>
+                    <div id="medal-area" style="display: none; font-size: 2.5rem; margin: 5px 0;">🥇</div>
+                    <div class="stat-label">BEST SCORE: <span id="best-score" style="color:var(--dark)">0</span></div>
+                    <div id="last-score-area" style="display: none; border-top: 1px solid #ccc; margin-top: 5px; padding-top: 5px;">
+                        <div class="stat-label">LAST: <span id="last-score" style="color:var(--dark)">0</span></div>
+                    </div>
+                </div>
+
+                <div class="stat-label" style="margin-bottom: 10px;">BIRD STORE</div>
+                <div class="shop-container" id="shop-items"></div>
+
+                <div class="btn-group">
+                    <button class="btn btn-easy" onclick="preStart(event, 'easy')">START EASY</button>
+                    <button class="btn btn-medium" onclick="preStart(event, 'medium')">START MEDIUM</button>
+                    <button class="btn btn-hard" onclick="preStart(event, 'hard')">START HARD</button>
+                    
+                    <button onclick="resetAllData()"
+                        style="margin-top: 15px; background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 0.7rem; font-weight: bold; text-decoration: underline;">
+                        RESET SEMUA DATA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDiv = document.getElementById('score');
+        const countdownDiv = document.getElementById('countdown');
+        const uiOverlay = document.getElementById('ui-overlay');
+
+        const birdImg = new Image();
+        const bgImg = new Image(); bgImg.src = 'background.png';
+
+        // --- STORAGE & SHOP SYSTEM ---
+        let totalCoins, ownedBirds, selectedBird, highScore;
+
+        // Fungsi Memuat Data
+        function loadPlayerData() {
+            totalCoins = parseInt(localStorage.getItem('flappyTotalCoins')) || 0;
+            ownedBirds = JSON.parse(localStorage.getItem('flappyOwnedBirds')) || ['bird.png'];
+            selectedBird = localStorage.getItem('flappySelectedBird') || 'bird.png';
+            highScore = parseInt(localStorage.getItem('flappyHighScore')) || 0;
+            
+            birdImg.src = selectedBird;
+            document.getElementById('best-score').textContent = highScore;
+            document.getElementById('total-wallet').textContent = totalCoins;
+        }
+
+        const birdsConfig = [
+            { name: "Classic", src: "bird.png", price: 0 },
+            { name: "Mochi", src: "bird2.png", price: 50 },
+            { name: "Matcha", src: "bird3.png", price: 100 },
+            { name: "Sherlow", src: "bird4.png", price: 200 }
+        ];
+
+        let bird, pipes, coins, score, sessionCoins, gameOver = false, gameStarted = false, isCounting = false;
+        let gravity = 0.55, bgX = 0, animationId;
+        let config = { speed: 4, gap: 0.3, spacing: 350 };
+        const BIRD_WIDTH = 65, BIRD_HEIGHT = 50;
+
+        function updateUI() {
+            document.getElementById('total-wallet').textContent = totalCoins;
+            const shopContainer = document.getElementById('shop-items');
+            shopContainer.innerHTML = '';
+
+            birdsConfig.forEach(b => {
+                const isOwned = ownedBirds.includes(b.src);
+                const isActive = selectedBird === b.src;
+                let btnText = isOwned ? (isActive ? "ACTIVE" : "USE") : `💰 ${b.price}`;
+                let btnClass = isOwned ? (isActive ? "btn-buy active" : "btn-buy owned") : "btn-buy";
+
+                shopContainer.innerHTML += `
+                    <div class="shop-item">
+                        <div class="stat-label" style="font-size:0.6rem">${b.name}</div>
+                        <img src="${b.src}" onerror="this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='">
+                        <button class="${btnClass}" onclick="handleShopClick('${b.src}', ${b.price})">${btnText}</button>
+                    </div>
+                `;
+            });
+        }
+
+        function handleShopClick(src, price) {
+            if (ownedBirds.includes(src)) {
+                selectedBird = src;
+                birdImg.src = src;
+            } else if (totalCoins >= price) {
+                totalCoins -= price;
+                ownedBirds.push(src);
+                selectedBird = src;
+                birdImg.src = src;
+            } else {
+                alert("Koin tidak cukup!");
+                return;
+            }
+            saveToStorage();
+            updateUI();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('flappyTotalCoins', totalCoins);
+            localStorage.setItem('flappyOwnedBirds', JSON.stringify(ownedBirds));
+            localStorage.setItem('flappySelectedBird', selectedBird);
+            localStorage.setItem('flappyHighScore', highScore);
+        }
+
+        // FUNGSI RESET DATA (Koin, Highscore, Burung)
+        function resetAllData() {
+            if (confirm("Reset koin, skor terbaik, dan burung? Tindakan ini tidak bisa dibatalkan.")) {
+                localStorage.clear();
+                loadPlayerData(); // Muat ulang variabel ke default
+                updateUI();       // Update tampilan toko
+                location.reload(); // Refresh halaman untuk membersihkan sisa state
+            }
+        }
+
+        function initVariables() {
+            bird = { x: canvas.width * 0.25, y: canvas.height / 2, width: BIRD_WIDTH, height: BIRD_HEIGHT, velocity: 0 };
+            pipes = []; coins = [];
+            score = 0; sessionCoins = 0;
+            gameOver = false; gameStarted = false; bgX = 0;
+            scoreDiv.textContent = "0";
+            updateUI();
+        }
+
+        function drawCoin(x, y) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI * 2);
+            ctx.fillStyle = "#FFD700";
+            ctx.fill();
+            ctx.strokeStyle = "#B8860B";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.fillStyle = "#B8860B";
+            ctx.font = "bold 16px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("¢", x, y + 6);
+            ctx.restore();
+        }
+
+        function drawStyledPipe(x, y, width, height, isTop) {
+            const headHeight = 35;
+            const headOverlap = 12;
+            const headX = x - headOverlap / 2;
+            const headY = isTop ? (y + height - headHeight) : y;
+            let grad = ctx.createLinearGradient(x, 0, x + width, 0);
+            grad.addColorStop(0, '#533847'); grad.addColorStop(0.5, '#9ce659'); grad.addColorStop(1, '#533847');
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, width, height);
+            ctx.strokeStyle = '#533847'; ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, width, height);
+            ctx.fillRect(headX, headY, width + headOverlap, headHeight);
+            ctx.strokeRect(headX, headY, width + headOverlap, headHeight);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            bgX -= (gameStarted ? config.speed * 0.2 : 0.5);
+            if (bgX <= -canvas.width) bgX = 0;
+            ctx.drawImage(bgImg, bgX, 0, canvas.width, canvas.height);
+            ctx.drawImage(bgImg, bgX + canvas.width, 0, canvas.width, canvas.height);
+
+            pipes.forEach(p => {
+                drawStyledPipe(p.x, 0, p.width, p.top, true);
+                drawStyledPipe(p.x, p.bottom, p.width, canvas.height - p.bottom, false);
+            });
+
+            coins.forEach(c => { if (!c.collected) drawCoin(c.x, c.y); });
+
+            ctx.save();
+            ctx.translate(bird.x, bird.y);
+            let rot = gameStarted ? Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.velocity * 0.07)) : 0;
+            ctx.rotate(rot);
+            if (birdImg.complete) {
+                ctx.drawImage(birdImg, -bird.width / 2, -bird.height / 2, bird.width, bird.height);
+            } else {
+                ctx.fillStyle = "pink"; ctx.fillRect(-bird.width / 2, -bird.height / 2, bird.width, bird.height);
+            }
+            ctx.restore();
+
+            if (gameStarted) {
+                ctx.fillStyle = "white"; ctx.font = "bold 25px Arial";
+                ctx.fillText("💰 Session: " + sessionCoins, 20, 40);
+            }
+        }
+
+        function update() {
+            if (!gameStarted || gameOver) return;
+            bird.velocity += gravity;
+            bird.y += bird.velocity;
+            if (bird.y + 15 > canvas.height || bird.y - 15 < 0) endGame();
+
+            pipes.forEach(p => {
+                p.x -= config.speed;
+                if (bird.x + 20 > p.x && bird.x - 20 < p.x + p.width) {
+                    if (bird.y - 18 < p.top || bird.y + 18 > p.bottom) endGame();
+                }
+                if (!p.passed && bird.x > p.x + p.width) {
+                    score++; scoreDiv.textContent = score; p.passed = true;
+                }
+            });
+
+            coins.forEach(c => {
+                c.x -= config.speed;
+                if (!c.collected && Math.hypot(bird.x - c.x, bird.y - c.y) < 40) {
+                    c.collected = true;
+                    sessionCoins++;
+                    totalCoins++;
+                }
+            });
+
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - config.spacing) {
+                let g = canvas.height * config.gap;
+                let t = Math.random() * (canvas.height - g - 250) + 125;
+                pipes.push({ x: canvas.width, width: 75, top: t, bottom: t + g, passed: false });
+                coins.push({ x: canvas.width + 37, y: t + (g / 2), collected: false });
+            }
+            pipes = pipes.filter(p => p.x > -100);
+            coins = coins.filter(c => c.x > -100 && !c.collected);
+        }
+
+        function endGame() {
+            gameOver = true; gameStarted = false;
+            cancelAnimationFrame(animationId);
+            
+            if (score > highScore) { highScore = score; }
+            saveToStorage();
+
+            document.getElementById('best-score').textContent = highScore;
+            document.getElementById('last-score').textContent = score + " (💰" + sessionCoins + ")";
+            document.getElementById('last-score-area').style.display = 'block';
+            document.getElementById('main-title').innerHTML = "GAME OVER";
+
+            const medalArea = document.getElementById('medal-area');
+            if (score >= 5) {
+                medalArea.style.display = 'block';
+                medalArea.textContent = score >= 40 ? '💎' : score >= 20 ? '🥇' : score >= 10 ? '🥈' : '🥉';
+            } else { medalArea.style.display = 'none'; }
+
+            uiOverlay.style.display = 'flex';
+            scoreDiv.style.display = 'none';
+            updateUI();
+            requestAnimationFrame(menuLoop);
+        }
+
+        function preStart(e, level) {
+            e.stopPropagation();
+            if (isCounting) return;
+            setDifficulty(level);
+            initVariables();
+            uiOverlay.style.display = 'none';
+            countdownDiv.style.display = 'block';
+            isCounting = true;
+            let count = 3;
+            countdownDiv.textContent = count;
+            let timer = setInterval(() => {
+                count--;
+                if (count <= 0) {
+                    clearInterval(timer);
+                    countdownDiv.style.display = 'none';
+                    isCounting = false;
+                    gameStarted = true;
+                    scoreDiv.style.display = 'block';
+                    loop();
+                } else { countdownDiv.textContent = count; }
+            }, 800);
+        }
+
+        function setDifficulty(level) {
+            if (level === 'easy') { config.speed = 3.5; config.gap = 0.45; config.spacing = 450; }
+            else if (level === 'medium') { config.speed = 5.5; config.gap = 0.32; config.spacing = 330; }
+            else if (level === 'hard') { config.speed = 8.5; config.gap = 0.25; config.spacing = 260; }
+        }
+
+        function loop() { if (!gameStarted || gameOver) return; update(); draw(); animationId = requestAnimationFrame(loop); }
+        function menuLoop() { if (gameStarted) return; draw(); bird.y = (canvas.height / 2) + Math.sin(Date.now() / 200) * 25; animationId = requestAnimationFrame(menuLoop); }
+        function jump(e) { if (e.type === 'keydown' && e.code !== 'Space') return; if (gameStarted && !gameOver) bird.velocity = -9.5; }
+
+        window.addEventListener('mousedown', jump);
+        window.addEventListener('keydown', jump);
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            if (!gameStarted) { initVariables(); draw(); }
+        });
+
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        loadPlayerData(); // Panggil fungsi muat data pertama kali
+        initVariables();
+        menuLoop();
+    </script>
+</body>
+
+</html>
